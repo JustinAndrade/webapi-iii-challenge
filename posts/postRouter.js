@@ -10,13 +10,11 @@ router.get('/', async (req, res) => {
 		res.status(200).json(posts);
 	} catch (error) {
 		console.log(error);
-		res.status(500).json({
-			message: 'Error retrieving posts.'
-		});
+		res.status(500).json({ message: 'Error retrieving posts.' });
 	}
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', validatePostId, async (req, res) => {
 	try {
 		const post = await Posts.getById(req.params.id);
 
@@ -33,7 +31,7 @@ router.get('/:id', async (req, res) => {
 	}
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', validatePostId, async (req, res) => {
 	try {
 		const count = await Posts.remove(req.params.id);
 
@@ -50,7 +48,7 @@ router.delete('/:id', async (req, res) => {
 	}
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', validatePostId, async (req, res) => {
 	try {
 		const post = await Posts.update(req.params.id, req.body);
 		if (post) {
@@ -68,6 +66,19 @@ router.put('/:id', async (req, res) => {
 
 // custom middleware
 
-function validatePostId(req, res, next) {}
+async function validatePostId(req, res, next) {
+	try {
+		const { id } = req.params;
+		const post = await Posts.getById(id);
+		if (hub) {
+			req.hub = hub;
+			next();
+		} else {
+			next({ message: 'Post not found; invalid id' });
+		}
+	} catch (error) {
+		res.status(500).json({ message: 'Failed to process request' });
+	}
+}
 
 module.exports = router;
