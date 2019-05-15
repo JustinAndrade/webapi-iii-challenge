@@ -4,7 +4,7 @@ const Users = require('./userDb.js');
 
 const router = express.Router();
 
-router.post('/', async (req, res) => {
+router.post('/', validateUser, async (req, res) => {
 	try {
 		console.log(Object.keys(req));
 		const user = await Users.insert(req.body);
@@ -15,19 +15,18 @@ router.post('/', async (req, res) => {
 	}
 });
 
-router.post('/:id/posts', async (req, res) => {
-	const postInfo = { ...req.body, userId: req.params.id };
+// router.post('/:id/posts', async (req, res) => {
+// 	try {
+// 		console.log({ ...req.body });
+// 		const post = await Users.insert(req.body);
+// 		res.status(201).json(post);
+// 	} catch (error) {
+// 		console.log(error);
+// 		res.status(500).json({ message: 'Error retrieving users.' });
+// 	}
+// });
 
-	try {
-		const post = await Users.insert(postInfo);
-		res.status(210).json(post);
-	} catch (error) {
-		console.log(error);
-		res.status(500).json({ message: 'Error retrieving users.' });
-	}
-});
-
-router.get('/', async (req, res) => {
+router.get('/', validateUser, async (req, res) => {
 	try {
 		const users = await Users.get(req.query);
 		res.status(200).json(users);
@@ -51,7 +50,7 @@ router.get('/:id', validateUserId, async (req, res) => {
 	}
 });
 
-router.get('/:id/posts', async (req, res) => {
+router.get('/:id/posts', validatePost, async (req, res) => {
 	try {
 		const postInfo = await Users.getUserPosts(req.params.id);
 		res.status(200).json(postInfo);
@@ -61,7 +60,7 @@ router.get('/:id/posts', async (req, res) => {
 	}
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', validateUserId, async (req, res) => {
 	try {
 		const count = await Users.remove(req.params.id);
 		if (count > 0) {
@@ -75,7 +74,7 @@ router.delete('/:id', async (req, res) => {
 	}
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', validateUserId, async (req, res) => {
 	try {
 		const user = await Users.update(req.params.id, req.body);
 		if (user) {
@@ -107,8 +106,20 @@ async function validateUserId(req, res, next) {
 	}
 }
 
-function validateUser(req, res, next) {}
+function validateUser(req, res, next) {
+	if (req.body && req.params.id) {
+		next();
+	} else {
+		next({ message: 'No user present' });
+	}
+}
 
-function validatePost(req, res, next) {}
+function validatePost(req, res, next) {
+	if (req.body && Object.keys(req.body).length) {
+		next();
+	} else {
+		next({ message: 'No post found' });
+	}
+}
 
 module.exports = router;
